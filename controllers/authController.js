@@ -11,7 +11,7 @@ const express = require('express');
       const { email, password } = req.body;
       const hashedPassword = await bcrypt.hash(password, 10);
       const sql = 'INSERT INTO users (email, password) VALUES (?, ?)';
-      db.query(sql, [email, hashedPassword], (err, result) => {
+      db.run(sql, [email, hashedPassword], function(err) {
         if (err) {
           console.error('Error signing up:', err);
           return res.status(500).send('Error signing up.');
@@ -24,15 +24,14 @@ const express = require('express');
     router.post('/login', async (req, res) => {
       const { email, password } = req.body;
       const sql = 'SELECT * FROM users WHERE email = ?';
-      db.query(sql, [email], async (err, results) => {
+      db.get(sql, [email], async (err, user) => {
         if (err) {
           console.error('Error logging in:', err);
           return res.status(500).send('Error logging in.');
         }
-        if (results.length === 0) {
+        if (!user) {
           return res.status(401).send('Invalid credentials.');
         }
-        const user = results[0];
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
           return res.status(401).send('Invalid credentials.');
